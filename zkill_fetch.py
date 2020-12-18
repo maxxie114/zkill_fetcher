@@ -12,6 +12,6 @@ while 1:
     formatted_json = json.dumps(parsed, indent=4)
     print(formatted_json)
     f.write(formatted_json)
-    time.sleep(secs)
+    time.sleep(1)
 
 f.close()
