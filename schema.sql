@@ -34,14 +34,6 @@ CREATE TABLE victim (
     z_coord REAL
 );
 
-CREATE TABLE items (
-    killmail_id INTEGER,
-    flag INTEGER,
-    item_type_id INTEGER,
-    quantity_destroyed INTEGER,
-    singleton INTEGER
-);
-
 CREATE TABLE zkb (
     killmail_id INTEGER,
     locationID INTEGER,
