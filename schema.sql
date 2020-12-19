@@ -5,7 +5,7 @@ CREATE TABLE killmail (
     killID INTEGER,
     killmail_id INTEGER,
     killmail_time TEXT,
-    solar_system_id INTEGER,
+    solar_system_id INTEGER
 );
 
 
@@ -43,7 +43,7 @@ CREATE TABLE zkb (
     points INTEGER,
     npc INTEGER,
     solo INTEGER,
-    awox INTEGER
+    awox INTEGER,
     href TEXT
 );
 
