@@ -9,11 +9,11 @@ $db = new SQLite3("killmail.db");
 
 // First wipe the databases
 // DEBUG
-$db->exec("DELETE FROM killmail");
-$db->exec("DELETE FROM attacker");
-$db->exec("DELETE FROM victim");
-$db->exec("DELETE FROM zkb");
-$db->exec("DELETE FROM labels");
+// $db->exec("DELETE FROM killmail");
+// $db->exec("DELETE FROM attacker");
+// $db->exec("DELETE FROM victim");
+// $db->exec("DELETE FROM zkb");
+// $db->exec("DELETE FROM labels");
 
 /**
  * Insert data into killmail table
@@ -102,74 +102,92 @@ function insert_labels($data, $database) {
     $stm->execute();
 }
 
-# First make this code able to parse killmail_example.json
-$file = file_get_contents("killmail_example.json");
-$json = json_decode($file, true);
-$killmail_id = $json["package"]["killmail"]["killmail_id"];
-
-// TODO Add a killmail time parser
-$km_data = array(1,
-                  $json["package"]["killID"],
-                  $json["package"]["killmail"]["killmail_id"],
-                  $json["package"]["killmail"]["killmail_time"],
-                  $json["package"]["killmail"]["solar_system_id"]);
-insert_killmail($km_data, $db);
-
-// jq .package.killmail.attackers[0] killmail_example.json
-foreach($json["package"]["killmail"]["attackers"] as $i) {
-    $attacker_data = array($killmail_id,
-                           $i["alliance_id"],
-                           $i["character_id"],
-                           $i["corporation_id"],
-                           $i["damage_done"],
-                           $i["final_blow"],
-                           $i["security_status"],
-                           $i["ship_type_id"],
-                           $i["weapon_type_id"]);
-    insert_attacker($attacker_data, $db);
+/**
+ * Convert iso-8601 time format to sqlite readable time format
+ * 
+ * @return The converted time format
+ */
+function convert_time($time): string {
+    $old_time = strtotime($time);
+    $new_time = date('Y-m-d H:i:s', $old_time);
+    echo "[DEBUG] $new_time\n";
+    return $new_time;
 }
-
-// jq .package.killmail.victim  killmail_example.json
-$victim_data = array($killmail_id,
-                     $json["package"]["killmail"]["victim"]["alliance_id"],
-                     $json["package"]["killmail"]["victim"]["character_id"],
-                     $json["package"]["killmail"]["victim"]["corporation_id"],
-                     $json["package"]["killmail"]["victim"]["damage_taken"],
-                     $json["package"]["killmail"]["victim"]["ship_type_id"],
-                     $json["package"]["killmail"]["victim"]["position"]["x"],
-                     $json["package"]["killmail"]["victim"]["position"]["y"],
-                     $json["package"]["killmail"]["victim"]["position"]["z"]);
-insert_victim($victim_data, $db);
-
-// jq .package.zkb  killmail_example.json
-$zkb_data = array($killmail_id,
-                  $json["package"]["zkb"]["locationID"],
-                  $json["package"]["zkb"]["hash"],
-                  $json["package"]["zkb"]["fittedValue"],
-                  $json["package"]["zkb"]["totalValue"],
-                  $json["package"]["zkb"]["points"],
-                  $json["package"]["zkb"]["npc"],
-                  $json["package"]["zkb"]["solo"],
-                  $json["package"]["zkb"]["awox"],
-                  $json["package"]["zkb"]["href"]
-);
-insert_zkb($zkb_data, $db);
-
-// jq .package.zkb.labels  killmail_example.json
-foreach($json["package"]["zkb"]["labels"] as $i) {
-    $labels_data = array($killmail_id, $i);
-    insert_labels($labels_data, $db);
-}
-
-
 
 // Infinite loop to Fetch data from redisQ
-// while(true) {
-//     $response = file_get_contents('https://redisq.zkillboard.com/listen.php?queueID=maxxie114&ttw=1');
-//     $json = json_decode($response, true);
-//     // First check if killmail is null
-//     if ($json['package'] === null) {
-//         continue;
-//     }
-//     sleep(1);
-// }
+// set up index
+$count = 0;
+$db_result = $db->query("SELECT MAX(id) FROM killmail");
+$res = $db_result->fetchArray(SQLITE3_NUM);
+if(!is_null($res[0])) {
+    $count = $res[0]+1;
+    echo "[DEBUG] count is $count\n";   
+} else {
+    echo "[DEBUG] count is zero\n";
+}
+while(true) {
+    $response = file_get_contents('https://redisq.zkillboard.com/listen.php?queueID=maxxie114&ttw=1');
+    $json = json_decode($response, true);
+    // First check if killmail is null
+    if ($json['package'] === null) {
+        continue;
+    }
+    $killmail_id = $json["package"]["killmail"]["killmail_id"];
+
+    $old_km_time = $json["package"]["killmail"]["killmail_time"];
+    $new_km_time = convert_time($old_km_time);
+    $km_data = array($count,
+                    $json["package"]["killID"],
+                    $json["package"]["killmail"]["killmail_id"],
+                    $new_km_time,
+                    $json["package"]["killmail"]["solar_system_id"]);
+    insert_killmail($km_data, $db);
+
+    // jq .package.killmail.attackers[0] killmail_example.json
+    foreach($json["package"]["killmail"]["attackers"] as $i) {
+        $attacker_data = array($killmail_id,
+                            $i["alliance_id"],
+                            $i["character_id"],
+                            $i["corporation_id"],
+                            $i["damage_done"],
+                            $i["final_blow"],
+                            $i["security_status"],
+                            $i["ship_type_id"],
+                            $i["weapon_type_id"]);
+        insert_attacker($attacker_data, $db);
+    }
+
+    // jq .package.killmail.victim  killmail_example.json
+    $victim_data = array($killmail_id,
+                        $json["package"]["killmail"]["victim"]["alliance_id"],
+                        $json["package"]["killmail"]["victim"]["character_id"],
+                        $json["package"]["killmail"]["victim"]["corporation_id"],
+                        $json["package"]["killmail"]["victim"]["damage_taken"],
+                        $json["package"]["killmail"]["victim"]["ship_type_id"],
+                        $json["package"]["killmail"]["victim"]["position"]["x"],
+                        $json["package"]["killmail"]["victim"]["position"]["y"],
+                        $json["package"]["killmail"]["victim"]["position"]["z"]);
+    insert_victim($victim_data, $db);
+
+    // jq .package.zkb  killmail_example.json
+    $zkb_data = array($killmail_id,
+                    $json["package"]["zkb"]["locationID"],
+                    $json["package"]["zkb"]["hash"],
+                    $json["package"]["zkb"]["fittedValue"],
+                    $json["package"]["zkb"]["totalValue"],
+                    $json["package"]["zkb"]["points"],
+                    $json["package"]["zkb"]["npc"],
+                    $json["package"]["zkb"]["solo"],
+                    $json["package"]["zkb"]["awox"],
+                    $json["package"]["zkb"]["href"]
+    );
+    insert_zkb($zkb_data, $db);
+
+    // jq .package.zkb.labels  killmail_example.json
+    foreach($json["package"]["zkb"]["labels"] as $i) {
+        $labels_data = array($killmail_id, $i);
+        insert_labels($labels_data, $db);
+    }
+    $count++;
+    sleep(1);
+}
