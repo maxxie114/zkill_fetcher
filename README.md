@@ -6,16 +6,10 @@ zkill fetcher is a backend application written in PHP that gets zkillboard killm
 
 1. It is recommended to run this program on a linux environment
 2. This application require the installation of mysql database, php-mysql and screen.
-3. Run the schema.sql in the mysql console to create the schema needed for this program. 
+3. Run the schema.sql in the mysql console to create the schema and databases needed for this program. 
 
 ## Usage
-- First edit these four lines in zkill_fetch.php your database's username and password. 
-```php
-$host = "localhost";
-$db_name = "killmail";
-$username = "fetcher";
-$password = "Password!_35";
-```
+- First run the schema.sql file in your mysql console to create the database, table and user needed for this program. 
 
 - After that, run this command in screen on start the program 
 ```bash
