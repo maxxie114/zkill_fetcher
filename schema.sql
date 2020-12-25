@@ -1,5 +1,22 @@
-# tables killmail, attacker, victim, items, zkb
+/* Create the database, user and all the tables in one script */
 
+/* Create the database */
+CREATE DATABASE killmail;
+
+/* Create the user needed for this program and grant all privileges to killmail */
+CREATE USER 'fetcher'@'localhost'
+    IDENTIFIED BY 'Password!_35';
+
+GRANT ALL PRIVILEGES 
+    ON killmail.* 
+    TO 'fetcher'@'localhost';
+
+FLUSH PRIVILEGES;
+
+/* Switch to the appropriate database */
+USE killmail;
+
+/* Create table killmail */
 CREATE TABLE killmail (
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
     killID INTEGER,
@@ -8,7 +25,7 @@ CREATE TABLE killmail (
     solar_system_id INTEGER
 );
 
-
+/* Create table attacker */
 CREATE TABLE attacker (
     killmail_id INTEGER,
     alliance_id INTEGER,
@@ -21,7 +38,7 @@ CREATE TABLE attacker (
     weapon_type_id INTEGER
 );
 
-
+/* Create table victim */
 CREATE TABLE victim (
     killmail_id INTEGER,
     alliance_id INTEGER,
@@ -34,6 +51,7 @@ CREATE TABLE victim (
     z_coord FLOAT
 );
 
+/* Create table zkb */
 CREATE TABLE zkb (
     killmail_id INTEGER,
     locationID INTEGER,
@@ -47,6 +65,7 @@ CREATE TABLE zkb (
     href VARCHAR(255)
 );
 
+/* Create table labels */
 CREATE TABLE labels ( 
     killmail_id INTEGER,
     label VARCHAR(10)
