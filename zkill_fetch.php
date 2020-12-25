@@ -15,14 +15,6 @@ try {
 }
 
 
-// First wipe the databases
-// DEBUG
-// $db->exec("DELETE FROM killmail");
-// $db->exec("DELETE FROM attacker");
-// $db->exec("DELETE FROM victim");
-// $db->exec("DELETE FROM zkb");
-// $db->exec("DELETE FROM labels");
-
 /**
  * Insert data into killmail table
  */
@@ -124,7 +116,8 @@ function convert_time($time): string {
 
 // Infinite loop to Fetch data from redisQ
 while(true) {
-    $response = file_get_contents('https://redisq.zkillboard.com/listen.php?queueID=maxxie114&ttw=1');
+    $url = 'https://redisq.zkillboard.com/listen.php?queueID=maxxie114&ttw=1';
+    $response = file_get_contents($url);
     $json = json_decode($response, true);
     // First check if killmail is null
     if ($json['package'] === null) {
@@ -140,7 +133,6 @@ while(true) {
                     $json["package"]["killmail"]["solar_system_id"]);
     insert_killmail($km_data, $db);
 
-    // alliance_id, character_id, corporation_id, ship_type_id, weapon_type_id
     foreach($json["package"]["killmail"]["attackers"] as $i) {
         $alliance_id = (isset($i["alliance_id"])) ? $i["alliance_id"] : null;
         $character_id = (isset($i["character_id"])) ? $i["character_id"] : null;
@@ -159,7 +151,6 @@ while(true) {
         insert_attacker($attacker_data, $db);
     }
 
-    // alliance_id, character_id
     $alliance_id = (isset($json["package"]["killmail"]["victim"]["alliance_id"])) ? 
         $json["package"]["killmail"]["victim"]["alliance_id"] : null;
     $character_id = (isset($json["package"]["killmail"]["victim"]["character_id"])) ? 
@@ -181,7 +172,6 @@ while(true) {
                         $json["package"]["killmail"]["victim"]["position"]["z"]);
     insert_victim($victim_data, $db);
 
-    // jq .package.zkb  killmail_example.json
     $zkb_data = array($killmail_id,
                     $json["package"]["zkb"]["locationID"],
                     $json["package"]["zkb"]["hash"],
@@ -195,7 +185,6 @@ while(true) {
     );
     insert_zkb($zkb_data, $db);
 
-    // jq .package.zkb.labels  killmail_example.json
     foreach($json["package"]["zkb"]["labels"] as $i) {
         $labels_data = array($killmail_id, $i);
         insert_labels($labels_data, $db);
